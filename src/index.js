@@ -1,51 +1,71 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import reportWebVitals from "./reportWebVitals";
-import * as actions from "./store/actions";
-import { initiateStore } from "./store/store";
+import {
+    titleChanged,
+    taskDeleted,
+    tasksReset,
+    completeTask,
+    loadTasks,
+    getTasks,
+    getTasksLoadingStatus,
+    createTask,
+} from "./store/task";
+import createStore from "./store/store";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { getError } from "./store/errors";
 
-const initialState = [
-    { id: 1, title: "task 1", completed: false },
-    { id: 2, title: "task 2", completed: false },
-];
-
-const store = initiateStore();
+const store = createStore();
 
 const App = () => {
-    const [state, setState] = useState(store.getState());
+    const [taskData, setTaskData] = useState({
+        title: "",
+        completed: false,
+    });
+    const state = useSelector(getTasks());
+    const isLoading = useSelector(getTasksLoadingStatus());
+    const error = useSelector(getError());
+    const dispatch = useDispatch();
     useEffect(() => {
-        store.subscribe(() => {
-            setState(store.getState());
-        });
+        dispatch(loadTasks());
     }, []);
-    const completeTask = (taskId) => {
-        store.dispatch(actions.taskCompleted(taskId));
+    const handleChange = (evt) => {
+        evt.preventDefault();
+        setTaskData((prevState) => ({ ...prevState, title: evt.target.value }));
     };
     const changeTitle = (taskId) => {
-        store.dispatch(actions.titleChanged(taskId));
+        dispatch(titleChanged(taskId));
     };
     const deleteTask = (taskId) => {
-        store.dispatch(actions.taskDeleted(taskId));
+        dispatch(taskDeleted(taskId));
     };
-    const clearState = () => {
-        setState(initialState);
+    const resetTasks = () => {
+        dispatch(tasksReset());
     };
+    if (isLoading) {
+        return <p>loading...</p>;
+    }
+    if (error) {
+        return <p>{error}</p>;
+    }
     return (
         <>
             <h1>App</h1>
+            <input placeholder="enter title here" onChange={handleChange} />
+            <button onClick={() => dispatch(createTask(taskData))}>Post task</button>
             <ul>
                 {state.map((el) => (
                     <li key={el.id}>
                         <p>{el.title}</p>
                         <p>{`Completed: ${el.completed}`}</p>
-                        <button onClick={() => completeTask(el.id)}>Click me</button>
+                        <button onClick={() => dispatch(completeTask(el.id))}>Change status</button>
                         <button onClick={() => changeTitle(el.id)}>Change title</button>
                         <button onClick={() => deleteTask(el.id)}>Delete task</button>
                         <hr />
                     </li>
                 ))}
             </ul>
-            <button onClick={clearState}>Clear</button>
+            <button onClick={resetTasks}>Reset</button>
         </>
     );
 };
@@ -53,7 +73,9 @@ const App = () => {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <React.StrictMode>
-        <App />
+        <Provider store={store}>
+            <App />
+        </Provider>
     </React.StrictMode>
 );
 
