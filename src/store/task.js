@@ -28,10 +28,13 @@ const taskSlice = createSlice({
         taskRequested(state) {
             state.isLoading = true;
         },
+        taskRequestFailed(state) {
+            state.isLoading = false;
+        },
     },
 });
 
-const { update, remove, reset, set, taskRequested, add } = taskSlice.actions;
+const { update, remove, reset, set, taskRequested, add, taskRequestFailed } = taskSlice.actions;
 const taskReducer = taskSlice.reducer;
 
 export const loadTasks = () => async (dispatch) => {
@@ -41,6 +44,7 @@ export const loadTasks = () => async (dispatch) => {
         dispatch(set(data));
     } catch (error) {
         dispatch(setError(error.message));
+        dispatch(taskRequestFailed());
     }
 };
 
